@@ -25,7 +25,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Money Manager'),
+        title: const Text('Sổ Thu Chi'),
         centerTitle: true,
         backgroundColor: Colors.amber,
         actions: [

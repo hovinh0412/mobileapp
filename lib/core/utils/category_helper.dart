@@ -5,17 +5,58 @@ import '../../data/models/category.dart';
 class CategoryHelper {
   // 1. Danh sách các hạng mục Chi tiêu
   static List<Category> expenseCategories = [
-    Category(id: 'food', name: 'Ăn uống', icon: Icons.fastfood, color: Colors.orange, isExpense: true),
-    Category(id: 'transport', name: 'Đi lại', icon: Icons.directions_bus, color: Colors.blue, isExpense: true),
-    Category(id: 'shopping', name: 'Mua sắm', icon: Icons.shopping_cart, color: Colors.pink, isExpense: true),
-    Category(id: 'bill', name: 'Hóa đơn', icon: Icons.receipt_long, color: Colors.purple, isExpense: true),
+    Category(id: 'shopping', name: 'Mua sắm', icon: Icons.shopping_cart, color: Colors.blue, isExpense: true),
+    Category(id: 'food', name: 'Đồ ăn', icon: Icons.restaurant, color: Colors.orange, isExpense: true),
+    Category(id: 'phone', name: 'Điện thoại', icon: Icons.phone_iphone, color: Colors.blueGrey, isExpense: true),
+    Category(id: 'entertainment', name: 'Giải trí', icon: Icons.mic, color: Colors.pink, isExpense: true),
+    Category(id: 'education', name: 'Giáo dục', icon: Icons.book, color: Colors.brown, isExpense: true),
+    Category(id: 'beauty', name: 'Sắc đẹp', icon: Icons.face, color: Colors.purple, isExpense: true),
+    Category(id: 'sport', name: 'Thể thao', icon: Icons.pool, color: Colors.cyan, isExpense: true),
+    Category(id: 'social', name: 'Xã hội', icon: Icons.people, color: Colors.teal, isExpense: true),
+    Category(id: 'transport', name: 'Đi lại', icon: Icons.directions_bus, color: Colors.indigo, isExpense: true),
+    Category(id: 'clothing', name: 'Quần áo', icon: Icons.checkroom, color: Colors.deepPurple, isExpense: true),
+    Category(id: 'car', name: 'Ô tô', icon: Icons.directions_car, color: Colors.blueAccent, isExpense: true),
+    Category(id: 'health', name: 'Sức khỏe', icon: Icons.medical_services, color: Colors.redAccent, isExpense: true),
+    // ... Bạn có thể thêm tiếp cho đủ
   ];
 
   // 2. Danh sách các hạng mục Thu nhập
   static List<Category> incomeCategories = [
-    Category(id: 'salary', name: 'Lương', icon: Icons.attach_money, color: Colors.green, isExpense: false),
-    Category(id: 'bonus', name: 'Thưởng', icon: Icons.card_giftcard, color: Colors.teal, isExpense: false),
-    Category(id: 'invest', name: 'Đầu tư', icon: Icons.show_chart, color: Colors.indigo, isExpense: false),
+    Category(
+      id: 'salary', 
+      name: 'Lương', 
+      icon: Icons.account_balance_wallet, // Icon cái ví/thẻ
+      color: Colors.amber[700]!, // Màu vàng sậm giống ảnh Home
+      isExpense: false
+    ),
+    Category(
+      id: 'invest', 
+      name: 'Khoản đầu tư', 
+      icon: Icons.savings, // Icon heo đất/túi tiền
+      color: Colors.pinkAccent, // Màu hồng giống ảnh Home
+      isExpense: false
+    ),
+    Category(
+      id: 'overtime', 
+      name: 'Làm thêm', 
+      icon: Icons.access_time, // Icon đồng hồ
+      color: Colors.blue, 
+      isExpense: false
+    ),
+    Category(
+      id: 'bonus', 
+      name: 'Tiền thưởng', 
+      icon: Icons.card_giftcard, // Icon hộp quà
+      color: Colors.teal, 
+      isExpense: false
+    ),
+    Category(
+      id: 'other', 
+      name: 'Khác', 
+      icon: Icons.apps, // Icon 4 ô vuông
+      color: Colors.grey, 
+      isExpense: false
+    ),
   ];
 
   // 3. Hàm tìm Category theo ID (Dùng để hiển thị lịch sử)

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../data/models/transaction.dart';
 import '../../data/models/category.dart';
-import '../../core/utils/category_helper.dart'; // Import Helper
+import '../../core/utils/category_helper.dart';
 import 'transaction_controller.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -12,85 +12,139 @@ class AddTransactionScreen extends StatefulWidget {
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
 }
 
-class _AddTransactionScreenState extends State<AddTransactionScreen> {
+class _AddTransactionScreenState extends State<AddTransactionScreen> with SingleTickerProviderStateMixin {
   final TransactionController controller = Get.find<TransactionController>();
-  final TextEditingController amountController = TextEditingController();
-  final TextEditingController noteController = TextEditingController();
-  
-  DateTime selectedDate = DateTime.now();
-  bool isExpense = true;
-  
-  // Biến lưu danh mục đang chọn (Mặc định lấy cái đầu tiên của list Chi)
-  late Category selectedCategory;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    // Khởi tạo danh mục mặc định
-    selectedCategory = CategoryHelper.expenseCategories[0];
+    // Tạo bộ điều khiển cho 3 tab: Chi tiêu, Thu nhập, Chuyển khoản
+    _tabController = TabController(length: 3, vsync: this);
   }
 
-  // Hàm thay đổi loại Thu/Chi
-  void _changeType(bool value) {
-    setState(() {
-      isExpense = value;
-      // Khi đổi loại, phải chọn lại danh mục mặc định tương ứng
-      if (isExpense) {
-        selectedCategory = CategoryHelper.expenseCategories[0];
-      } else {
-        selectedCategory = CategoryHelper.incomeCategories[0];
-      }
-    });
-  }
-
-  // Hàm hiển thị BottomSheet để chọn danh mục
-  void _showCategoryPicker() {
-    // Lấy list tương ứng
-    final List<Category> listToShow = isExpense 
-        ? CategoryHelper.expenseCategories 
-        : CategoryHelper.incomeCategories;
+  // HÀM QUAN TRỌNG: Hiển thị popup nhập tiền sau khi chọn icon
+  void _showInputModal(Category category) {
+    final amountController = TextEditingController();
+    final noteController = TextEditingController();
+    DateTime selectedDate = DateTime.now();
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // Để popup full màn hình hoặc cao lên
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          height: 350,
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom, // Đẩy lên khi phím hiện
+            left: 16, right: 16, top: 16
+          ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Chọn danh mục", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4, // 4 cột
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
+              // 1. Tiêu đề: Icon + Tên danh mục đã chọn
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: category.color.withOpacity(0.2),
+                    child: Icon(category.icon, color: category.color),
                   ),
-                  itemCount: listToShow.length,
-                  itemBuilder: (context, index) {
-                    final cat = listToShow[index];
-                    return InkWell(
-                      onTap: () {
-                        setState(() {
-                          selectedCategory = cat;
-                        });
-                        Navigator.pop(context); // Đóng bảng chọn
-                      },
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: cat.color.withOpacity(0.2),
-                            child: Icon(cat.icon, color: cat.color),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(cat.name, style: const TextStyle(fontSize: 12)),
-                        ],
-                      ),
-                    );
-                  },
+                  const SizedBox(width: 10),
+                  Text(category.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // 2. Nhập số tiền
+              TextField(
+                controller: amountController,
+                keyboardType: TextInputType.number,
+                autofocus: true, // Tự động bật bàn phím
+                decoration: const InputDecoration(
+                  labelText: "Số tiền",
+                  border: OutlineInputBorder(),
+                  suffixText: "đ",
                 ),
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.red),
+              ),
+              const SizedBox(height: 15),
+
+              // 3. Nhập ghi chú
+              TextField(
+                controller: noteController,
+                decoration: const InputDecoration(
+                  labelText: "Ghi chú",
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.note),
+                ),
+              ),
+              const SizedBox(height: 15),
+
+              // 4. Chọn ngày (Đơn giản hóa)
+              // Bạn có thể thêm DatePicker ở đây nếu muốn
+
+              // 5. Nút Lưu
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFD54F)), // Màu vàng
+                  onPressed: () {
+                    if (amountController.text.isEmpty) return;
+
+                    final newTransaction = Transaction(
+                      amount: double.parse(amountController.text),
+                      note: noteController.text.isEmpty ? category.name : noteController.text,
+                      date: selectedDate,
+                      isExpense: category.isExpense,
+                      category: category.id,
+                    );
+
+                    controller.addTransaction(newTransaction);
+                    Get.back(); // Đóng Modal
+                    Get.back(); // Quay về Home
+                    Get.snackbar("Thành công", "Đã thêm giao dịch");
+                  },
+                  child: const Text("LƯU", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Widget hiển thị lưới Icon
+  Widget _buildCategoryGrid(List<Category> categories) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(15),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4, // 4 cột giống ảnh
+        childAspectRatio: 0.8, // Tỉ lệ chiều cao/rộng
+      ),
+      itemCount: categories.length,
+      itemBuilder: (context, index) {
+        final cat = categories[index];
+        return InkWell(
+          onTap: () => _showInputModal(cat), // Bấm vào thì hiện popup nhập
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Vòng tròn xám bao quanh icon
+              CircleAvatar(
+                radius: 25,
+                backgroundColor: Colors.grey[200],
+                child: Icon(cat.icon, color: Colors.grey[700], size: 28),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                cat.name, 
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12),
               ),
             ],
           ),
@@ -99,142 +153,54 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-  void _saveTransaction() {
-    if (amountController.text.isEmpty) {
-      Get.snackbar("Lỗi", "Vui lòng nhập số tiền");
-      return;
-    }
-
-    final newTransaction = Transaction(
-      amount: double.parse(amountController.text),
-      note: noteController.text.isEmpty ? selectedCategory.name : noteController.text,
-      date: selectedDate,
-      isExpense: isExpense,
-      category: selectedCategory.id, // LƯU ID CỦA DANH MỤC ĐÃ CHỌN
-    );
-
-    controller.addTransaction(newTransaction);
-    Get.back();
-    Get.snackbar("Thành công", "Đã lưu giao dịch");
-  }
-
   @override
   Widget build(BuildContext context) {
+    // Màu vàng đặc trưng
+    const Color primaryYellow = Color(0xFFFFD54F); 
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Thêm giao dịch"),
-        backgroundColor: isExpense ? Colors.red[100] : Colors.green[100],
-      ),
-      body: SingleChildScrollView( // Bọc để không bị che khi bàn phím hiện
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // 1. Chọn Thu/Chi
-            Row(
-              children: [
-                Expanded(
-                  child: ChoiceChip(
-                    label: const Center(child: Text("Chi tiêu")),
-                    selected: isExpense,
-                    selectedColor: Colors.redAccent,
-                    onSelected: (val) => _changeType(true),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ChoiceChip(
-                    label: const Center(child: Text("Thu nhập")),
-                    selected: !isExpense,
-                    selectedColor: Colors.greenAccent,
-                    onSelected: (val) => _changeType(false),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // 2. Số tiền
-            TextField(
-              controller: amountController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: "Số tiền",
-                border: OutlineInputBorder(),
-                suffixText: "đ",
-              ),
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-
-            // 3. CHỌN DANH MỤC (MỚI)
-            InkWell(
-              onTap: _showCategoryPicker,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: selectedCategory.color,
-                      radius: 18,
-                      child: Icon(selectedCategory.icon, color: Colors.white, size: 20),
-                    ),
-                    const SizedBox(width: 15),
-                    Text(
-                      selectedCategory.name, 
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500)
-                    ),
-                    const Spacer(),
-                    const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // 4. Ghi chú
-            TextField(
-              controller: noteController,
-              decoration: const InputDecoration(
-                labelText: "Ghi chú (Tùy chọn)",
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.note),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // 5. Chọn ngày
-            ListTile(
-              title: Text("Ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}"),
-              leading: const Icon(Icons.calendar_today),
-              shape: RoundedRectangleBorder(side: const BorderSide(color: Colors.grey), borderRadius: BorderRadius.circular(5)),
-              onTap: () async {
-                 DateTime? picked = await showDatePicker(
-                    context: context, initialDate: selectedDate, 
-                    firstDate: DateTime(2020), lastDate: DateTime(2030));
-                 if (picked != null) setState(() => selectedDate = picked);
-              },
-            ),
-            const SizedBox(height: 30),
-
-            // 6. Nút Lưu
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isExpense ? Colors.red : Colors.green,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: _saveTransaction,
-                child: const Text("LƯU", style: TextStyle(fontSize: 18)),
-              ),
-            ),
+        backgroundColor: primaryYellow,
+        title: const Text("Thêm", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        leading: TextButton(
+          onPressed: () => Get.back(),
+          child: const Text("Hủy", style: TextStyle(color: Colors.black)),
+        ),
+        actions: const [
+           // Icon góc phải (như ảnh)
+           Padding(
+             padding: EdgeInsets.only(right: 10),
+             child: Icon(Icons.edit_note, color: Colors.black),
+           )
+        ],
+        // PHẦN TAB BAR CHUYỂN ĐỔI
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: Colors.black,
+          indicatorColor: Colors.black,
+          indicatorWeight: 3,
+          tabs: const [
+            Tab(text: "Chi tiêu"),
+            Tab(text: "Thu nhập"),
+            Tab(text: "Chuyển khoản"),
           ],
         ),
+      ),
+      
+      // Nội dung thay đổi theo Tab
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // Tab 1: Lưới Chi tiêu
+          _buildCategoryGrid(CategoryHelper.expenseCategories),
+          
+          // Tab 2: Lưới Thu nhập
+          _buildCategoryGrid(CategoryHelper.incomeCategories),
+          
+          // Tab 3: Chuyển khoản (Tạm thời để trống)
+          const Center(child: Text("Tính năng đang phát triển")),
+        ],
       ),
     );
   }
